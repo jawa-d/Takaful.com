@@ -2,7 +2,6 @@
 
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { mockRequests } from "@/mock/requests";
 import { AuditEntry, RequestItem, RequestStatus, UserRole, UserSession } from "@/types";
 
 interface AppState {
@@ -48,16 +47,7 @@ export const useAppStore = create<AppState>()(
       hasHydrated: false,
       setRequests: (requests) => set({ requests }),
       setHasHydrated: (value) => set({ hasHydrated: value }),
-      hydrateMock: () => {
-        if (!get().requests.length) {
-          const hydrated = mockRequests.map((r) => ({
-            ...r,
-            approvalFlow: r.approvalFlow ?? buildApprovalFlow(r),
-            currentApprovalStep: r.currentApprovalStep ?? (r.status === "Approved" ? (r.approvalFlow?.length ?? buildApprovalFlow(r).length) : 0),
-          }));
-          set({ requests: hydrated });
-        }
-      },
+      hydrateMock: () => {},
       login: (session) => {
         const now = new Date().toISOString();
         const log: AuditEntry = {
@@ -370,6 +360,13 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "acs-enterprise-local",
+      version: 2,
+      migrate: () => ({
+        requests: [],
+        session: null,
+        notifications: [],
+        auditLogs: [],
+      }),
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         requests: state.requests,
