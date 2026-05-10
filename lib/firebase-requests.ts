@@ -5,12 +5,12 @@ import { collection, deleteDoc, doc, onSnapshot, orderBy, query, setDoc } from "
 const COLLECTION_NAME = "requests";
 
 export const upsertRequestToFirestore = async (request: RequestItem) => {
-  if (!db) return;
+  if (!db) throw new Error("Firebase is not configured.");
   await setDoc(doc(db, COLLECTION_NAME, request.id), request, { merge: true });
 };
 
 export const deleteRequestFromFirestore = async (requestId: string) => {
-  if (!db) return;
+  if (!db) throw new Error("Firebase is not configured.");
   await deleteDoc(doc(db, COLLECTION_NAME, requestId));
 };
 

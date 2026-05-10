@@ -35,28 +35,42 @@ export default function RequestDetailsPage() {
   const approverLabel: Record<UserRole, string> = { Employee: "الموظف", Finance: "FNS", Manager: "IT", Admin: "CEO" };
   const canActOnApprovalStep = request.status === "Pending Review" && currentApprover === session.role;
 
-  const onSave = () => {
+  const onSave = async () => {
     const ok = updateRequest(request.id, { title, description, amount, currency: currencyCode }, session.name, session.role);
     if (!ok) {
       alert("لا توجد صلاحية للتعديل أو الطلب مقفول.");
       return;
     }
     const updated = useAppStore.getState().requests.find((r) => r.id === request.id);
-    if (updated) void upsertRequestToFirestore(updated);
+    if (updated) {
+      try {
+        await upsertRequestToFirestore(updated);
+      } catch (error) {
+        console.error(error);
+        alert("فشل حفظ التعديلات في Firebase.");
+        return;
+      }
+    }
     alert("تم حفظ التعديلات.");
   };
 
-  const onDelete = () => {
+  const onDelete = async () => {
     const ok = deleteRequest(request.id, session.role);
     if (!ok) {
       alert("لا توجد صلاحية للحذف أو الطلب مقفول.");
       return;
     }
-    void deleteRequestFromFirestore(request.id);
+    try {
+      await deleteRequestFromFirestore(request.id);
+    } catch (error) {
+      console.error(error);
+      alert("فشل حذف الطلب من Firebase.");
+      return;
+    }
     router.push("/requests");
   };
 
-  const changeStatus = (nextStatus: "Pending Review" | "Approved" | "Rejected" | "Draft") => {
+  const changeStatus = async (nextStatus: "Pending Review" | "Approved" | "Rejected" | "Draft") => {
     if (session.role === "Admin" && nextStatus !== "Approved" && nextStatus !== "Rejected") {
       alert("صلاحيتك تقتصر على الموافقة أو الرفض فقط.");
       return;
@@ -65,25 +79,46 @@ export default function RequestDetailsPage() {
     if (!ok) alert("الطلب المقفول (موافق عليه أو مرفوض) لا يمكن تغييره.");
     if (ok) {
       const updated = useAppStore.getState().requests.find((r) => r.id === request.id);
-      if (updated) void upsertRequestToFirestore(updated);
+      if (updated) {
+        try {
+          await upsertRequestToFirestore(updated);
+        } catch (error) {
+          console.error(error);
+          alert("تم تحديث الحالة محليًا لكن فشل الحفظ في Firebase.");
+        }
+      }
     }
   };
 
-  const onArchive = () => {
+  const onArchive = async () => {
     const ok = archiveRequest(request.id, session.name, session.role);
     if (!ok) alert("لا يمكن أرشفة الطلب. الصلاحية مطلوبة لمستخدم IT فقط.");
     if (ok) {
       const updated = useAppStore.getState().requests.find((r) => r.id === request.id);
-      if (updated) void upsertRequestToFirestore(updated);
+      if (updated) {
+        try {
+          await upsertRequestToFirestore(updated);
+        } catch (error) {
+          console.error(error);
+          alert("تمت الأرشفة محليًا لكن فشل الحفظ في Firebase.");
+        }
+      }
     }
   };
 
-  const onRestore = () => {
+  const onRestore = async () => {
     const ok = restoreRequest(request.id, session.name, session.role);
     if (!ok) alert("لا يمكن استرجاع الطلب. الصلاحية مطلوبة لمستخدم IT فقط.");
     if (ok) {
       const updated = useAppStore.getState().requests.find((r) => r.id === request.id);
-      if (updated) void upsertRequestToFirestore(updated);
+      if (updated) {
+        try {
+          await upsertRequestToFirestore(updated);
+        } catch (error) {
+          console.error(error);
+          alert("تم الاسترجاع محليًا لكن فشل الحفظ في Firebase.");
+        }
+      }
     }
   };
 

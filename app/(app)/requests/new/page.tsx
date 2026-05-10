@@ -31,14 +31,22 @@ export default function NewRequestPage() {
     defaultValues: { employeeName: session.name, requestType: "Financial", priority: "Medium", currency: "USD" } as Partial<FormValues>,
   });
 
-  const onSubmit = (data: FormValues) => {
+  const onSubmit = async (data: FormValues) => {
     const id = createRequest({ ...data, department: session.department, status: "Draft", attachments: ["mock-file.pdf"], notes: [] }, session.role);
     if (!id) {
       alert("ليس لديك صلاحية إنشاء طلب.");
       return;
     }
     const created = useAppStore.getState().requests.find((r) => r.id === id);
-    if (created) void upsertRequestToFirestore(created);
+    if (created) {
+      try {
+        await upsertRequestToFirestore(created);
+      } catch (error) {
+        console.error(error);
+        alert("فشل حفظ الطلب في Firebase. تأكد من ENV في Vercel وقواعد Firestore.");
+        return;
+      }
+    }
     router.push(`/requests/${id}`);
   };
 
