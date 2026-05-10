@@ -1,0 +1,48 @@
+﻿import { RequestItem } from "@/types";
+
+export const mockRequests: RequestItem[] = [
+  {
+    id: "1",
+    requestId: "REQ-2026-001",
+    employeeName: "Amina Khaled",
+    department: "Operations",
+    requestType: "Purchase",
+    title: "Procurement of Laptops for New Team",
+    description: "Need 8 high-performance laptops for onboarding growth team.",
+    amount: 18600,
+    currency: "USD",
+    status: "Pending Review",
+    priority: "High",
+    attachments: ["quotation.pdf", "spec-sheet.docx"],
+    notes: ["Vendor comparison added"],
+    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+    workflow: [
+      { at: new Date(Date.now() - 86400000 * 5).toISOString(), by: "Amina Khaled", role: "Employee", action: "Draft Created" },
+      { at: new Date(Date.now() - 86400000 * 4).toISOString(), by: "Amina Khaled", role: "Employee", action: "Submitted" },
+      { at: new Date(Date.now() - 86400000 * 2).toISOString(), by: "Sami Omar", role: "Manager", action: "Reviewed" },
+    ],
+  },
+  {
+    id: "2",
+    requestId: "REQ-2026-002",
+    employeeName: "Yousef Ali",
+    department: "Finance",
+    requestType: "Financial",
+    title: "Budget Reallocation for Q3 Campaign",
+    description: "Shift budget from events to digital acquisition.",
+    amount: 55000000,
+    currency: "IQD",
+    status: "Approved",
+    priority: "Medium",
+    attachments: ["budget-plan.xlsx"],
+    notes: ["CFO confirmed"],
+    createdAt: new Date(Date.now() - 86400000 * 12).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000 * 7).toISOString(),
+    workflow: [
+      { at: new Date(Date.now() - 86400000 * 12).toISOString(), by: "Yousef Ali", role: "Finance", action: "Submitted" },
+      { at: new Date(Date.now() - 86400000 * 10).toISOString(), by: "Mona Raad", role: "Manager", action: "Approved" },
+      { at: new Date(Date.now() - 86400000 * 7).toISOString(), by: "Tariq Saab", role: "Admin", action: "Final Approved" },
+    ],
+  },
+];
