@@ -60,39 +60,35 @@ export const useAppStore = create<AppState>()(
       },
       login: (session) => {
         const now = new Date().toISOString();
+        const log: AuditEntry = {
+          id: crypto.randomUUID(),
+          at: now,
+          actor: session.name,
+          role: session.role,
+          action: "USER_LOGIN",
+          details: `User logged in (${session.department})`,
+        };
         set((s) => ({
           session,
-          auditLogs: [
-            {
-              id: crypto.randomUUID(),
-              at: now,
-              actor: session.name,
-              role: session.role,
-              action: "USER_LOGIN",
-              details: `User logged in (${session.department})`,
-            },
-            ...s.auditLogs,
-          ].slice(0, 1000),
+          auditLogs: [log, ...s.auditLogs].slice(0, 1000),
         }));
       },
       logout: () => {
         const current = get().session;
         const now = new Date().toISOString();
+        const log: AuditEntry | null = current
+          ? {
+              id: crypto.randomUUID(),
+              at: now,
+              actor: current.name,
+              role: current.role,
+              action: "USER_LOGOUT",
+              details: "User logged out",
+            }
+          : null;
         set((s) => ({
           session: null,
-          auditLogs: current
-            ? [
-                {
-                  id: crypto.randomUUID(),
-                  at: now,
-                  actor: current.name,
-                  role: current.role,
-                  action: "USER_LOGOUT",
-                  details: "User logged out",
-                },
-                ...s.auditLogs,
-              ].slice(0, 1000)
-            : s.auditLogs,
+          auditLogs: log ? [log, ...s.auditLogs].slice(0, 1000) : s.auditLogs,
         }));
       },
       createRequest: (payload, role) => {
@@ -214,23 +210,21 @@ export const useAppStore = create<AppState>()(
             workflow: [...current.workflow, { at: now, by: actor, role, action: "Archived from status update" }],
           };
         }
+        const log: AuditEntry = {
+          id: crypto.randomUUID(),
+          at: now,
+          actor,
+          role,
+          action: "REQUEST_STATUS_CHANGED",
+          requestId: current.id,
+          requestCode: current.requestId,
+          details,
+        };
 
         set((s) => ({
           requests: s.requests.map((r) => (r.id === id ? nextRequest : r)),
           notifications: [notification, ...s.notifications].slice(0, 12),
-          auditLogs: [
-            {
-              id: crypto.randomUUID(),
-              at: now,
-              actor,
-              role,
-              action: "REQUEST_STATUS_CHANGED",
-              requestId: current.id,
-              requestCode: current.requestId,
-              details,
-            },
-            ...s.auditLogs,
-          ].slice(0, 1000),
+          auditLogs: [log, ...s.auditLogs].slice(0, 1000),
         }));
         return true;
       },
@@ -241,6 +235,16 @@ export const useAppStore = create<AppState>()(
         const now = new Date().toISOString();
         const patched = { ...current, ...patch };
         const approvalFlow = buildApprovalFlow(patched);
+        const log: AuditEntry = {
+          id: crypto.randomUUID(),
+          at: now,
+          actor,
+          role,
+          action: "REQUEST_UPDATED",
+          requestId: current.id,
+          requestCode: current.requestId,
+          details: "Updated request details",
+        };
         set((s) => ({
           requests: s.requests.map((r) =>
             r.id === id
@@ -254,19 +258,7 @@ export const useAppStore = create<AppState>()(
               : r
           ),
           notifications: [`${current.requestId} updated`, ...s.notifications].slice(0, 12),
-          auditLogs: [
-            {
-              id: crypto.randomUUID(),
-              at: now,
-              actor,
-              role,
-              action: "REQUEST_UPDATED",
-              requestId: current.id,
-              requestCode: current.requestId,
-              details: "Updated request details",
-            },
-            ...s.auditLogs,
-          ].slice(0, 1000),
+          auditLogs: [log, ...s.auditLogs].slice(0, 1000),
         }));
         return true;
       },
@@ -276,22 +268,20 @@ export const useAppStore = create<AppState>()(
         if (!current || current.status === "Approved" || current.status === "Rejected") return false;
         const now = new Date().toISOString();
         const actor = get().session?.name || "Unknown";
+        const log: AuditEntry = {
+          id: crypto.randomUUID(),
+          at: now,
+          actor,
+          role,
+          action: "REQUEST_DELETED",
+          requestId: current.id,
+          requestCode: current.requestId,
+          details: "Deleted request",
+        };
         set((s) => ({
           requests: s.requests.filter((r) => r.id !== id),
           notifications: [`${current.requestId} deleted`, ...s.notifications].slice(0, 12),
-          auditLogs: [
-            {
-              id: crypto.randomUUID(),
-              at: now,
-              actor,
-              role,
-              action: "REQUEST_DELETED",
-              requestId: current.id,
-              requestCode: current.requestId,
-              details: "Deleted request",
-            },
-            ...s.auditLogs,
-          ].slice(0, 1000),
+          auditLogs: [log, ...s.auditLogs].slice(0, 1000),
         }));
         return true;
       },
@@ -299,20 +289,18 @@ export const useAppStore = create<AppState>()(
         if (role !== "Manager") return false;
         const now = new Date().toISOString();
         const actor = get().session?.name || "Unknown";
+        const log: AuditEntry = {
+          id: crypto.randomUUID(),
+          at: now,
+          actor,
+          role,
+          action: "REQUESTS_CLEARED",
+          details: "Deleted all requests",
+        };
         set((s) => ({
           requests: [],
           notifications: ["all requests deleted", ...s.notifications].slice(0, 12),
-          auditLogs: [
-            {
-              id: crypto.randomUUID(),
-              at: now,
-              actor,
-              role,
-              action: "REQUESTS_CLEARED",
-              details: "Deleted all requests",
-            },
-            ...s.auditLogs,
-          ].slice(0, 1000),
+          auditLogs: [log, ...s.auditLogs].slice(0, 1000),
         }));
         return true;
       },
@@ -321,6 +309,16 @@ export const useAppStore = create<AppState>()(
         const current = get().requests.find((r) => r.id === id);
         if (!current || current.status === "Archived") return false;
         const now = new Date().toISOString();
+        const log: AuditEntry = {
+          id: crypto.randomUUID(),
+          at: now,
+          actor,
+          role,
+          action: "REQUEST_ARCHIVED",
+          requestId: current.id,
+          requestCode: current.requestId,
+          details: "Archived request",
+        };
         set((s) => ({
           requests: s.requests.map((r) =>
             r.id === id
@@ -333,19 +331,7 @@ export const useAppStore = create<AppState>()(
               : r
           ),
           notifications: [`${current.requestId} archived`, ...s.notifications].slice(0, 12),
-          auditLogs: [
-            {
-              id: crypto.randomUUID(),
-              at: now,
-              actor,
-              role,
-              action: "REQUEST_ARCHIVED",
-              requestId: current.id,
-              requestCode: current.requestId,
-              details: "Archived request",
-            },
-            ...s.auditLogs,
-          ].slice(0, 1000),
+          auditLogs: [log, ...s.auditLogs].slice(0, 1000),
         }));
         return true;
       },
@@ -354,6 +340,16 @@ export const useAppStore = create<AppState>()(
         const current = get().requests.find((r) => r.id === id);
         if (!current || current.status !== "Archived") return false;
         const now = new Date().toISOString();
+        const log: AuditEntry = {
+          id: crypto.randomUUID(),
+          at: now,
+          actor,
+          role,
+          action: "REQUEST_RESTORED",
+          requestId: current.id,
+          requestCode: current.requestId,
+          details: "Restored archived request",
+        };
         set((s) => ({
           requests: s.requests.map((r) =>
             r.id === id
@@ -367,19 +363,7 @@ export const useAppStore = create<AppState>()(
               : r
           ),
           notifications: [`${current.requestId} restored`, ...s.notifications].slice(0, 12),
-          auditLogs: [
-            {
-              id: crypto.randomUUID(),
-              at: now,
-              actor,
-              role,
-              action: "REQUEST_RESTORED",
-              requestId: current.id,
-              requestCode: current.requestId,
-              details: "Restored archived request",
-            },
-            ...s.auditLogs,
-          ].slice(0, 1000),
+          auditLogs: [log, ...s.auditLogs].slice(0, 1000),
         }));
         return true;
       },
